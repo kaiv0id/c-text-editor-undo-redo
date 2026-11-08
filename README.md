@@ -52,6 +52,12 @@ flowchart TD
 
 See [docs/architecture.md](docs/architecture.md) for operation flow and complexity.
 
+## Undo, Redo, and queued edits
+
+Each edit is first applied to a temporary copy and committed only if its position, range, and resulting size are valid. The editor records the document before and after that change as one action. **Undo** restores the earlier snapshot and moves the action to Redo; **Redo** restores the later snapshot and moves it back to Undo. A new edit that changes the document clears Redo history.
+
+Queued requests store the operation and its arguments in a fixed circular array. The queue processes its front item first and removes it only after the edit succeeds. If the document state makes an item invalid, processing stops and leaves that request at the front so it can be reviewed and retried after correcting the document.
+
 ## Build and run
 
 Requirements: a C99 compiler (GCC recommended) and Make. On Windows, install a MinGW-w64 GCC toolchain and GNU Make, or compile directly:
