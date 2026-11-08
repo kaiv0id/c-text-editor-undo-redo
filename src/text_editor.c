@@ -115,15 +115,32 @@ static int apply_operation(char *text, const Operation *op) {
 static int perform(Editor *editor, const Operation *op) {
     Action action;
     char candidate[TEXT_CAPACITY];
+    Operation resolved = *op;
     const char *name = op->type == OP_INSERT ? "Insert" :
                        op->type == OP_DELETE ? "Delete" : "Replace";
+    if (resolved.type == OP_INSERT) {
+        size_t current_length = strlen(editor->text);
+        size_t inserted_length = strlen(resolved.text);
+        resolved.position = current_length + 1;
+        if (current_length > 0 && inserted_length > 0 &&
+            !isspace((unsigned char)editor->text[current_length - 1]) &&
+            !isspace((unsigned char)resolved.text[0])) {
+            if (inserted_length + 1 >= sizeof resolved.text) return 0;
+            memmove(resolved.text + 1, resolved.text, inserted_length + 1);
+            resolved.text[0] = ' ';
+        }
+    }
     memcpy(candidate, editor->text, sizeof candidate);
-    if (!apply_operation(candidate, op)) return 0;
+    if (!apply_operation(candidate, &resolved)) return 0;
     if (strcmp(candidate, editor->text) == 0) return 1;
     memcpy(action.before, editor->text, sizeof action.before);
     memcpy(action.after, candidate, sizeof action.after);
-    (void)snprintf(action.description, sizeof action.description,
-                   "%s at position %zu", name, op->position);
+    if (op->type == OP_INSERT)
+        (void)snprintf(action.description, sizeof action.description,
+                       "%s at end", name);
+    else
+        (void)snprintf(action.description, sizeof action.description,
+                       "%s at position %zu", name, resolved.position);
     memcpy(editor->text, candidate, sizeof editor->text);
     stack_push(&editor->undo, &action);
     editor->redo.count = 0;
@@ -169,14 +186,16 @@ static int make_operation(Operation *op, OperationType type) {
     int result;
     memset(op, 0, sizeof *op);
     op->type = type;
-    result = read_size("Position (1-based): ", &op->position);
-    if (result <= 0) { puts("Invalid position input."); return 0; }
+    if (type != OP_INSERT) {
+        result = read_size("Character position: ", &op->position);
+        if (result <= 0) { puts("Invalid position input."); return 0; }
+    }
     if (type != OP_INSERT) {
         result = read_size("Number of characters: ", &op->length);
         if (result <= 0 || op->length == 0) { puts("Length must be a positive integer."); return 0; }
     }
     if (type != OP_DELETE) {
-        result = read_line(type == OP_INSERT ? "Text to insert: " : "Replacement text: ",
+        result = read_line(type == OP_INSERT ? "Text to append: " : "Replacement text: ",
                            op->text, sizeof op->text);
         if (result <= 0) { puts("Invalid text input."); return 0; }
     }
@@ -239,9 +258,9 @@ static void show_pending(const PendingQueue *queue) {
     if (queue->count == 0) { puts("  (empty)"); return; }
     for (i = 0; i < queue->count; ++i) {
         const Operation *op = &queue->items[(queue->front + i) % QUEUE_CAPACITY];
-        printf("  %zu. %s at %zu\n", i + 1,
-               op->type == OP_INSERT ? "Insert" : op->type == OP_DELETE ? "Delete" : "Replace",
-               op->position);
+        if (op->type == OP_INSERT) printf("  %zu. Append text\n", i + 1);
+        else printf("  %zu. %s at position %zu\n", i + 1,
+                    op->type == OP_DELETE ? "Delete" : "Replace", op->position);
     }
 }
 
@@ -275,7 +294,7 @@ static void show_menu(const Editor *editor) {
     printf("  Document: %zu/%d characters  |  Undo: %zu/%d  |  Redo: %zu/%d\n",
            characters, TEXT_CAPACITY - 1, editor->undo.count, HISTORY_CAPACITY,
            editor->redo.count, HISTORY_CAPACITY);
-    printf("  Pending edits: %zu/%d  |  Positions are 1-based\n",
+    printf("  Pending edits: %zu/%d  |  Insert appends with spacing\n",
            editor->pending.count, QUEUE_CAPACITY);
 }
 
