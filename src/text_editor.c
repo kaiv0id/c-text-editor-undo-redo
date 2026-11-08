@@ -258,16 +258,35 @@ static void process_pending(Editor *editor) {
     puts("Pending queue is empty.");
 }
 
+static void show_menu(const Editor *editor) {
+    size_t characters = strlen(editor->text);
+    puts("\n+-------------------------------------------------------------+");
+    puts("|                    ADVANCED C TEXT EDITOR                   |");
+    puts("|                    Undo  /  Redo  /  Queue                  |");
+    puts("+------------------------------+------------------------------+");
+    printf("| %-28s | %-28s |\n", "1  Insert text", "2  Delete text");
+    printf("| %-28s | %-28s |\n", "3  Replace text", "4  Undo last edit");
+    printf("| %-28s | %-28s |\n", "5  Redo edit", "6  Queue an edit");
+    printf("| %-28s | %-28s |\n", "7  Process queue", "8  View pending queue");
+    printf("| %-28s | %-28s |\n", "9  View edit history", "10  Display document");
+    printf("| %-28s | %-28s |\n", "11  Save document", "12  Load document");
+    printf("| %-28s | %-28s |\n", "13  Show statistics", "0  Exit");
+    puts("+------------------------------+------------------------------+");
+    printf("  Document: %zu/%d characters  |  Undo: %zu/%d  |  Redo: %zu/%d\n",
+           characters, TEXT_CAPACITY - 1, editor->undo.count, HISTORY_CAPACITY,
+           editor->redo.count, HISTORY_CAPACITY);
+    printf("  Pending edits: %zu/%d  |  Positions are 1-based\n",
+           editor->pending.count, QUEUE_CAPACITY);
+}
+
 int main(void) {
     static Editor editor;
     char line[INPUT_CAPACITY];
-    puts("Advanced C Text Editor — Undo, Redo and Pending Queue");
+    puts("Welcome! Your text editor is ready.");
     for (;;) {
         size_t choice;
-        puts("\n1 Insert  2 Delete  3 Replace  4 Undo  5 Redo  6 Queue operation");
-        puts("7 Process queue  8 Show queue  9 Show history  10 Show text");
-        puts("11 Save  12 Load  13 Statistics  0 Exit");
-        if (!read_size("Choice: ", &choice)) { if (feof(stdin)) break; puts("Enter a valid menu number."); continue; }
+        show_menu(&editor);
+        if (!read_size("\n  Select an option [0-13]: ", &choice)) { if (feof(stdin)) break; puts("Enter a valid menu number."); continue; }
         if (choice == 0) break;
         if (choice >= 1 && choice <= 3) {
             Operation op;
