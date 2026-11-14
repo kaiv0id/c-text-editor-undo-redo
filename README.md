@@ -1,8 +1,5 @@
 # Advanced C Text Editor
 
-[![Language](https://img.shields.io/badge/language-C-blue.svg)](https://en.wikipedia.org/wiki/C_(programming_language))
-[![Standard](https://img.shields.io/badge/standard-C99-informational.svg)](https://www.iso.org/standard/29237.html)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 A small menu driven text editor that demonstrates editing a document in C with **Undo and Redo stacks** and a **circular FIFO queue** for deferred edits. It is intended as an understandable data structures project, not a full word processor.
 
