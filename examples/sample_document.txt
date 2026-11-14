@@ -1,2 +1,0 @@
-This is a sample document for the C text editor.
-Use Load from the menu to open it.
