@@ -57,24 +57,6 @@ Each edit is first applied to a temporary copy and committed only if its positio
 
 Queued requests store the operation and its arguments in a fixed circular array. The queue processes its front item first and removes it only after the edit succeeds. If the document state makes an item invalid, processing stops and leaves that request at the front so it can be reviewed and retried after correcting the document.
 
-## Build and run
-
-Requirements: a C99 compiler (GCC recommended) and Make. On Windows, install a MinGW-w64 GCC toolchain and GNU Make, or compile directly:
-
-```sh
-gcc -std=c99 -Wall -Wextra -pedantic src/text_editor.c -o text_editor
-./text_editor
-```
-
-With Make:
-
-```sh
-make
-make run
-make clean
-```
-
-On Windows, run `text_editor.exe` after compiling with GCC. Start the program, choose a menu number, and follow the prompts. Enter `0` to exit.
 
 ## Example session
 
@@ -91,9 +73,6 @@ Choice: 5
 Redid: Insert at position 1
 ```
 
-## Tests
-
-See [tests/test_cases.md](tests/test_cases.md). Results are recorded there only after the scenarios are run with a compiler; no result is assumed from documentation alone.
 
 ## Complexity
 
@@ -113,10 +92,3 @@ The two history arrays use O(h × n) snapshot storage; the queue uses O(q × inp
 
 This is a single-document, single-line-at-a-time console editor with fixed limits. It does not support Unicode-aware character positions, multiline editing, automatic history grouping, configurable capacities, or crash recovery. Possible extensions include dynamic buffers, a line editor, a compact edit log, and a portable automated test runner.
 
-## License
-
-Released under the MIT License. It permits use, modification, and redistribution while retaining the copyright and license notice; see [LICENSE](LICENSE). The copyright line is intentionally generic because no author name was provided.
-
-## Author
-
-Project author: add your name before publishing if you want it listed.
