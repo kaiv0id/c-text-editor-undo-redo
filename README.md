@@ -50,7 +50,6 @@ flowchart TD
     F --> D
 ```
 
-See [docs/architecture.md](docs/architecture.md) for operation flow and complexity.
 
 ## Undo, Redo, and queued edits
 
