@@ -9,40 +9,40 @@
 #define HISTORY_CAPACITY 64
 #define QUEUE_CAPACITY 32
 
-typedef struct {
+struct {
     char before[TEXT_CAPACITY];
     char after[TEXT_CAPACITY];
     char description[80];
 } Action;
 
-typedef struct {
+struct {
     Action items[HISTORY_CAPACITY];
     size_t count;
 } ActionStack;
 
-typedef enum { OP_INSERT, OP_DELETE, OP_REPLACE } OperationType;
+enum { OP_INSERT, OP_DELETE, OP_REPLACE } OperationType;
 
-typedef struct {
+struct {
     OperationType type;
     size_t position;
     size_t length;
     char text[INPUT_CAPACITY];
 } Operation;
 
-typedef struct {
+struct {
     Operation items[QUEUE_CAPACITY];
     size_t front;
     size_t count;
 } PendingQueue;
 
-typedef struct {
+struct {
     char text[TEXT_CAPACITY];
     ActionStack undo;
     ActionStack redo;
     PendingQueue pending;
 } Editor;
 
-static int read_line(const char *prompt, char *buffer, size_t capacity) {
+int read_line(const char *prompt, char *buffer, size_t capacity) {
     size_t length;
     int ch;
     fputs(prompt, stdout);
@@ -60,7 +60,7 @@ static int read_line(const char *prompt, char *buffer, size_t capacity) {
     return 1;
 }
 
-static int read_size(const char *prompt, size_t *value) {
+int read_size(const char *prompt, size_t *value) {
     char line[INPUT_CAPACITY];
     char *end;
     unsigned long parsed;
@@ -75,7 +75,7 @@ static int read_size(const char *prompt, size_t *value) {
     return 1;
 }
 
-static int stack_push(ActionStack *stack, const Action *action) {
+int stack_push(ActionStack *stack, const Action *action) {
     if (stack->count == HISTORY_CAPACITY) {
         memmove(&stack->items[0], &stack->items[1],
                 (HISTORY_CAPACITY - 1) * sizeof stack->items[0]);
@@ -85,7 +85,7 @@ static int stack_push(ActionStack *stack, const Action *action) {
     return 1;
 }
 
-static int apply_operation(char *text, const Operation *op) {
+int apply_operation(char *text, const Operation *op) {
     size_t current = strlen(text);
     size_t position = op->position;
     size_t replacement_length = strlen(op->text);
@@ -112,7 +112,7 @@ static int apply_operation(char *text, const Operation *op) {
     return 1;
 }
 
-static int perform(Editor *editor, const Operation *op) {
+int perform(Editor *editor, const Operation *op) {
     Action action;
     char candidate[TEXT_CAPACITY];
     Operation resolved = *op;
@@ -147,7 +147,7 @@ static int perform(Editor *editor, const Operation *op) {
     return 1;
 }
 
-static int enqueue(PendingQueue *queue, const Operation *op) {
+int enqueue(PendingQueue *queue, const Operation *op) {
     size_t tail;
     if (queue->count == QUEUE_CAPACITY) return 0;
     tail = (queue->front + queue->count) % QUEUE_CAPACITY;
@@ -156,7 +156,7 @@ static int enqueue(PendingQueue *queue, const Operation *op) {
     return 1;
 }
 
-static int dequeue(PendingQueue *queue, Operation *op) {
+int dequeue(PendingQueue *queue, Operation *op) {
     if (queue->count == 0) return 0;
     *op = queue->items[queue->front];
     queue->front = (queue->front + 1) % QUEUE_CAPACITY;
@@ -164,7 +164,7 @@ static int dequeue(PendingQueue *queue, Operation *op) {
     return 1;
 }
 
-static void undo(Editor *editor) {
+void undo(Editor *editor) {
     Action action;
     if (editor->undo.count == 0) { puts("Nothing to undo."); return; }
     action = editor->undo.items[--editor->undo.count];
@@ -173,7 +173,7 @@ static void undo(Editor *editor) {
     printf("Undid: %s\n", action.description);
 }
 
-static void redo(Editor *editor) {
+void redo(Editor *editor) {
     Action action;
     if (editor->redo.count == 0) { puts("Nothing to redo."); return; }
     action = editor->redo.items[--editor->redo.count];
@@ -182,7 +182,7 @@ static void redo(Editor *editor) {
     printf("Redid: %s\n", action.description);
 }
 
-static int make_operation(Operation *op, OperationType type) {
+int make_operation(Operation *op, OperationType type) {
     int result;
     memset(op, 0, sizeof *op);
     op->type = type;
@@ -202,7 +202,7 @@ static int make_operation(Operation *op, OperationType type) {
     return 1;
 }
 
-static int save_file(const Editor *editor, const char *path) {
+int save_file(const Editor *editor, const char *path) {
     FILE *file = fopen(path, "w");
     size_t length = strlen(editor->text);
     int ok;
@@ -212,7 +212,7 @@ static int save_file(const Editor *editor, const char *path) {
     return ok;
 }
 
-static int load_file(Editor *editor, const char *path) {
+int load_file(Editor *editor, const char *path) {
     char loaded[TEXT_CAPACITY];
     size_t count;
     FILE *file = fopen(path, "rb");
@@ -245,14 +245,14 @@ static int load_file(Editor *editor, const char *path) {
     return perform(editor, &op);
 }
 
-static void show_history(const char *label, const ActionStack *stack) {
+void show_history(const char *label, const ActionStack *stack) {
     size_t i;
     printf("%s (%zu):\n", label, stack->count);
     for (i = stack->count; i > 0; --i) printf("  %zu. %s\n", stack->count - i + 1, stack->items[i - 1].description);
     if (stack->count == 0) puts("  (empty)");
 }
 
-static void show_pending(const PendingQueue *queue) {
+void show_pending(const PendingQueue *queue) {
     size_t i;
     puts("Pending operations (FIFO):");
     if (queue->count == 0) { puts("  (empty)"); return; }
@@ -264,7 +264,7 @@ static void show_pending(const PendingQueue *queue) {
     }
 }
 
-static void process_pending(Editor *editor) {
+void process_pending(Editor *editor) {
     while (editor->pending.count > 0) {
         Operation op = editor->pending.items[editor->pending.front];
         if (!perform(editor, &op)) {
@@ -277,7 +277,7 @@ static void process_pending(Editor *editor) {
     puts("Pending queue is empty.");
 }
 
-static void show_menu(const Editor *editor) {
+void show_menu(const Editor *editor) {
     size_t characters = strlen(editor->text);
     puts("\n+-------------------------------------------------------------+");
     puts("|                    ADVANCED C TEXT EDITOR                   |");
@@ -299,7 +299,7 @@ static void show_menu(const Editor *editor) {
 }
 
 int main(void) {
-    static Editor editor;
+    Editor editor;
     char line[INPUT_CAPACITY];
     puts("Welcome! Your text editor is ready.");
     for (;;) {
